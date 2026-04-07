@@ -30,10 +30,10 @@ def main():
     # print(f'df: {ecg_df.shape}')
 
 
-    # for dirpath, dirnames, filenames in os.walk("./ecgqa/ptbxl"):
-    for dirpath, dirnames, filenames in os.walk("./ecgqa/ptbxl/paraphrased/train"):
-        # for filename in [f for f in filenames if f.endswith(".json")]:
-        for filename in [f for f in filenames if f.endswith("000000.json")]:
+    for dirpath, dirnames, filenames in os.walk("./ecgqa/ptbxl"):
+    # for dirpath, dirnames, filenames in os.walk("./ecgqa/ptbxl/paraphrased/train"):
+        for filename in [f for f in filenames if f.endswith(".json")]:
+        # for filename in [f for f in filenames if f.endswith("000000.json")]:
             # print(os.path.join(dirpath, filename))
             with open(os.path.join(dirpath, filename), "r") as jsonfile:
                 data = json.load(jsonfile)
