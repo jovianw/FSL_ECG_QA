@@ -54,7 +54,7 @@ class FSL_ECG_QA_DataLoader(Dataset):
         self.prompt = prompt
         self.test_dataset=test_dataset
 
-        csv_path = os.path.join("/content/data/ptbxl/1.0.1", "ptbxl_database.csv") 
+        csv_path = os.path.join("/content/content/physionet.org/files/ptb-xl/1.0.1", "ptbxl_database.csv") 
         if os.path.exists(csv_path):
             self.metadata = pd.read_csv(csv_path).set_index('ecg_id')
             print(f"Loaded metadata for {len(self.metadata)} records.")
@@ -64,7 +64,7 @@ class FSL_ECG_QA_DataLoader(Dataset):
         
         # Set the base path depending on the test_dataset parameter
         if test_dataset == "ptb-xl":
-            self.ecg_base_path = "/gpfs/home1/jtang1/multimodal_fsl_99/process_ptbxl2"
+            self.ecg_base_path = os.path.join("/content/content/physionet.org/files/ptb-xl/1.0.1", "records100") 
             # self.ecg_base_path = "/path/to/ptbxl/data"  # Update with the actual path
         elif test_dataset == "mimic":
             self.ecg_base_path = "/gpfs/home1/jtang1/multimodal_fsl_99/process_mimic"
@@ -327,4 +327,3 @@ if __name__ == '__main__':
             print(f"Item {i}: {item}")
     else:
         print(batch)
-
