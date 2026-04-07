@@ -12,6 +12,7 @@ import argparse
 from meta_trainer import MetaTrainer
 import warnings
 from transformers import AutoTokenizer
+import pandas as pd
 
 warnings.filterwarnings("ignore")
 
@@ -52,6 +53,14 @@ class FSL_ECG_QA_DataLoader(Dataset):
         self.all_ids = all_ids
         self.prompt = prompt
         self.test_dataset=test_dataset
+
+        csv_path = os.path.join("/content/data/ptbxl", "ptbxl_database.csv") 
+        if os.path.exists(csv_path):
+            self.metadata = pd.read_csv(csv_path).set_index('ecg_id')
+            print(f"Loaded metadata for {len(self.metadata)} records.")
+        else:
+            print(f"WARNING: Metadata not found at {csv_path}")
+            self.metadata = None
         
         # Set the base path depending on the test_dataset parameter
         if test_dataset == "ptb-xl":
@@ -124,9 +133,13 @@ class FSL_ECG_QA_DataLoader(Dataset):
             f"{ecg_id:05d}_hr"
         )
         
-    def gen_prompt(self, q_str):    
+    def gen_prompt(self, q_str, age=None, sex=None):  
+        age_sex_prefix = ""
+        if age is not None and sex is not None:
+            gender = "male" if int(sex) == 0 else "female"
+            age_sex_prefix = f"Patient Profile: {int(age)}-year-old {gender}. "  
         if self.prompt == 1:
-            return "Question: " + q_str + "Answer: "
+            return age_sex_prefix + "Question: " + q_str + "Answer: "
         elif self.prompt == 2:
             return q_str
         elif self.prompt == 3:
@@ -160,6 +173,13 @@ class FSL_ECG_QA_DataLoader(Dataset):
         
         for sublist in self.support_x_batch[index]:
             for sample in sublist:
+                ecg_id = int(sample['ecg_id'][0])
+                age, sex = None, None
+                if self.metadata is not None and ecg_id in self.metadata.index:
+                    age = self.metadata.loc[ecg_id, 'age']
+                    sex = self.metadata.loc[ecg_id, 'sex']
+                    if pd.isna(age) or pd.isna(sex):
+                        age, sex = None, None
                 q_str = sample["question"].lower()
                 for num_a, content in enumerate(sample["answer"]):
                     if num_a != 0:
@@ -167,7 +187,7 @@ class FSL_ECG_QA_DataLoader(Dataset):
                     else:
                         a_str = content.lower()
                 
-                q_str_tokenized = self.gpt_tokenizer(self.gen_prompt(q_str), return_tensors="pt")['input_ids']
+                q_str_tokenized = self.gpt_tokenizer(self.gen_prompt(q_str, age=age, sex=sex), return_tensors="pt")['input_ids']
 
                 caption_padded_q, mask_0_q = pad_tokens(q_str_tokenized, self.seq_len, self.prefix_length,
                                                 self.gpt_tokenizer.eos_token_id)
@@ -193,8 +213,14 @@ class FSL_ECG_QA_DataLoader(Dataset):
                         a_str += ", " + content.lower()
                     else:
                         a_str = content.lower()
-
-                q_str_tokenized = self.gpt_tokenizer(self.gen_prompt(q_str), return_tensors="pt")['input_ids']
+                ecg_id = int(sample['ecg_id'][0])
+                age, sex = None, None
+                if self.metadata is not None and ecg_id in self.metadata.index:
+                    age = self.metadata.loc[ecg_id, 'age']
+                    sex = self.metadata.loc[ecg_id, 'sex']
+                    if pd.isna(age) or pd.isna(sex):
+                        age, sex = None, None
+                q_str_tokenized = self.gpt_tokenizer(self.gen_prompt(q_str, age=age, sex=sex), return_tensors="pt")['input_ids']
                 caption_padded_q, mask_0_q = pad_tokens(q_str_tokenized, self.seq_len, self.prefix_length,
                                                         self.gpt_tokenizer.eos_token_id)
                 query_y_q.append(caption_padded_q)
