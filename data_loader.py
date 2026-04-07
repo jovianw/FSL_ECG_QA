@@ -54,7 +54,7 @@ class FSL_ECG_QA_DataLoader(Dataset):
         self.prompt = prompt
         self.test_dataset=test_dataset
 
-        csv_path = os.path.join("/content/data/ptbxl", "ptbxl_database.csv") 
+        csv_path = os.path.join("/content/data/ptbxl/1.0.1", "ptbxl_database.csv") 
         if os.path.exists(csv_path):
             self.metadata = pd.read_csv(csv_path).set_index('ecg_id')
             print(f"Loaded metadata for {len(self.metadata)} records.")
