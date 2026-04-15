@@ -58,6 +58,7 @@ class MetaLearner(nn.Module):
         if labels is not None:
             dummy_token = self.get_dummy_token(batch_size=batch_size, dummy_token_len=self.prefix_length)
             labels = torch.cat((dummy_token, tokens), dim=1)
+        embedding_cat = embedding_cat.to(dtype=torch.bfloat16)
         out = self.gpt(**{'inputs_embeds':embedding_cat})
         out_logits = out.logits[:, self.prefix_length-1:self.prefix_length-1+self.seq_len_a]
         out_logits = out_logits[mask_a[:,self.prefix_length:] == 1]
@@ -137,6 +138,11 @@ class AttentionMapper(nn.Module):
         batch_size, clip_len = clip_x.shape[:2]
         fast_weights = list(fast_weights)
         prefix = fast_weights[0].unsqueeze(0).expand(batch_size, *fast_weights[0].shape)
+        if clip_x.dim() == 4 and clip_x.size(1) == 1:
+          clip_x = clip_x.squeeze(1)
+        elif clip_x.dim() == 4:
+    # If it's (B, C, S, H) and C > 1, you might need to flatten or pool
+          clip_x = clip_x.mean(dim=1)
         x_prefix = torch.cat((prefix, clip_x), dim=1)
 
         Q = F.linear(x_prefix, weight=fast_weights[1], bias=fast_weights[2])
